@@ -13,7 +13,11 @@
  *
  * ------------------------------------------------------------------------------------------------------------------------------*/
 
+<<<<<<< HEAD
 #define BLYNK_TEMPLATE_ID "XXXXXXXXXX"
+=======
+#define BLYNK_TEMPLATE_ID "TMPLaZh4cLMT"
+>>>>>>> 0f3497f779cc86d9b7957d2f0301fa6884d58949
 #define BLYNK_DEVICE_NAME "TermostatoBroker"
 #define BLYNK_FIRMWARE_VERSION  "1.0.1"
 

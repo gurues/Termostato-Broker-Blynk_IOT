@@ -5,8 +5,11 @@
 Quería realizar un termostato para mis familiares y amigos que no disponen de un sistema domótico y que están un poco "verdes" con la tecnología. Debía ser lo más minimalista posible y barato.
 ___
 
+<<<<<<< HEAD
 ![TermostatoBroker](/Ayuda/Fotos/TermostatoBroker.jpg){widh=10px height=10px}
 
+=======
+>>>>>>> 0f3497f779cc86d9b7957d2f0301fa6884d58949
 ## DESCRIPCIÓN DEL PROYECTO
 
 ### Material necesario
