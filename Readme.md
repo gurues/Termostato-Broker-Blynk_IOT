@@ -149,4 +149,18 @@ Es importante recordar que en la parte superior del código del archivo main.cpp
 En la carpeta "AYUDA" de este proyecto se comparten fotos, diseños 3D, firmware Tasmota y archivo configuración del shelly_1 para la realización y configuración del Termostato-Broker.
 ___
 
-## Realizado por gurues (gurues@3DO ~ Eneno 2023 ~ ogurues@gmail.com)
+## <span style="font-size:1.5em">**Actualizado debido al cambio de política de BLYNK**</span>
+
+<span style="color:red; font-size:1.25em">**Blynk modificó su política y redujo a 10 el número máximo de "Datastreams"**</span>, canales de comunicación entre el dispositivo y la app (Blynk.Cloud). En la nueva versión del firm del Termostato-Broker 1.0.2, algunas de las funciones que antes se configuraban con "Datastreams" en la app, ahora se configuran con ordenes mediante el terminal de la app.
+
+* Ordenes NUEVAS mediante terminal:
+  * AJUSTE -> Muestra el ajuste de temperatura configurado.
+  * AJUSTE= -> Configura ajuste de temperatura ej: AJUSTE=-2.
+  * BANDA -> Muestra la banda de funcionamiento, configurado.
+  * BANDA= -> Configura banda de funcionamiento, ej: BANDA=1.
+
+PROGRAMADOR HORARIO
+Se ha reducido de 3 a 2 los programadores horarios disponibles para configurar el arranque 7 paro de la calefacción.
+___
+
+## Realizado por gurues ~ Eneno 2023 ~  Actualizado Marzo 2023 (gurues@3DO ~ ogurues@gmail.com)

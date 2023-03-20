@@ -15,7 +15,7 @@
 
 #define BLYNK_TEMPLATE_ID "XXXXXXXXXX"
 #define BLYNK_DEVICE_NAME "TermostatoBroker"
-#define BLYNK_FIRMWARE_VERSION  "1.0.1"
+#define BLYNK_FIRMWARE_VERSION  "1.0.2"
 
 // Comentar para deshabilitar el Debug de Blynk
 #define BLYNK_PRINT Serial   // Defines the object that is used for printing
@@ -109,8 +109,6 @@ int Hora_Start_sec1;                      // Hora inicio calefacción en segundo
 int Hora_Stop_sec1;                       // Hora paro calefacción en segundos
 int Hora_Start_sec2;                      // Hora inicio calefacción en segundos
 int Hora_Stop_sec2;                       // Hora paro calefacción en segundos
-int Hora_Start_sec3;                      // Hora inicio calefacción en segundos
-int Hora_Stop_sec3;                       // Hora paro calefacción en segundos
 int Hora_Actual;                          // Hora actual
 int Min_Actual;                           // Minuto actual
 int Hora_Actual_sec;                      // Hora actual en segundos
@@ -118,12 +116,8 @@ String Hora_Start1;                       // Hora inicio Progrogramador 1
 String Hora_Stop1;                        // Hora fin Progrogramador 1
 String Hora_Start2;                       // Hora inicio Progrogramador 2
 String Hora_Stop2;                        // Hora fin Progrogramador 2
-String Hora_Start3;                       // Hora inicio Progrogramador 3
-String Hora_Stop3;                        // Hora fin Progrogramador 3
-
-String Prog_Dias1;                        // Dias programados de calefacción
-String Prog_Dias2;                        // Dias programados de calefacción
-String Prog_Dias3;                        // Dias programados de calefacción
+String Prog_Dias1;                        // Dias1 programados de calefacción
+String Prog_Dias2;                        // Dias2 programados de calefacción
 String Dia_Actual;                        // Dia actual
 
     // topic dispositivo a controlar con la temperatura (en este caso relé shelly 1)
@@ -163,6 +157,7 @@ void Ahora(){
 
 // Funciones app Blink  ---------------------------------------------------------------------------------------------------------
 
+
 // temperatura app Blink
 BLYNK_WRITE(V5){ 
   temp_medida = param.asFloat();
@@ -183,26 +178,6 @@ BLYNK_WRITE(V1){
   }
 }
 
-// Banda Diferencial app Blink
-BLYNK_WRITE(V3){ 
-  Banda_Diferencial = param.asFloat();
-  evalua = true;
-}
-
-// Ajuste temperatura app Blink
-BLYNK_WRITE(V7){ 
-  float mem_ajuste = param.asFloat();
-  if (ajuste > mem_ajuste)
-    temp_medida = temp_medida - 0.5;
-  if (ajuste < mem_ajuste)
-    temp_medida = temp_medida + 0.5;
-  if (ajuste == 0)
-    temp_medida = temp_medida + ajuste;
-  ajuste = mem_ajuste;
-  Blynk.virtualWrite(V5, temp_medida);
-  evalua = true;
-}
-
 // Objeto RTC (reloj)
 WidgetRTC rtc; 
 
@@ -221,7 +196,7 @@ BLYNK_WRITE(V9){
 }
 
 // Horario Programador 1 app Blink
-BLYNK_WRITE(V10) {
+BLYNK_WRITE(V3) {
   int Hora_Start=0;
   int Min_Start=0;
   int Hora_Stop=0;
@@ -265,7 +240,7 @@ BLYNK_WRITE(V10) {
 }
 
 // Horario Programador 2 app Blink
-BLYNK_WRITE(V11) {
+BLYNK_WRITE(V7) {
   int Hora_Start=0;
   int Min_Start=0;
   int Hora_Stop=0;
@@ -308,50 +283,6 @@ BLYNK_WRITE(V11) {
 
 }
 
-// Horario Programador 3 app Blink
-BLYNK_WRITE(V12) {
-  int Hora_Start=0;
-  int Min_Start=0;
-  int Hora_Stop=0;
-  int Min_Stop=0;
-  
-  // Horas programador
-  TimeInputParam t(param);
-
-  // Process start time
-  if (t.hasStartTime()){
-    Hora_Start = t.getStartHour(); 
-    Min_Start = t.getStartMinute();
-  }
-  
-  // Process stop time
-  if (t.hasStopTime()) {
-    Hora_Stop = t.getStopHour();
-    Min_Stop = t.getStopMinute();
-  }
-  
-  Hora_Start_sec3=(Hora_Start*3600)+(Min_Start*60);
-  Hora_Stop_sec3=(Hora_Stop*3600)+(Min_Stop*60);
-
-  // Process weekdays (1. Lunes 2. Martes 3. Miercoles 4. Jueves 5. Viernes 6.Sabado 7.Domingo)
-  Prog_Dias3="";
-  for (int i = 1; i <= 7; i++) {
-    if (t.isWeekdaySelected(i)) {
-      Prog_Dias3 = Prog_Dias3 + i;
-    }
-  }
-
-  if (Min_Actual<10){
-    Hora_Start3 =  String(Hora_Start) + ":0" + String(Min_Start);
-    Hora_Stop3 = String(Hora_Stop) + ":0" + String(Min_Stop);
-  }
-  else{
-    Hora_Start3 =  String(Hora_Start);
-    Hora_Stop3 = String(Hora_Stop);
-  }
-
-}
-
 // Horario Programador app Blink
 BLYNK_WRITE(V4){ 
   Programador = param.asInt();
@@ -361,7 +292,6 @@ BLYNK_WRITE(V4){
 void Control_Programador(){
   bool Evalua_PRG1 = false;  // Variable local estado Programador 1
   bool Evalua_PRG2 = false;  // Variable local estado Programador 2
-  bool Evalua_PRG3 = false;  // Variable local estado Programador 3
 
   // Programador_1
   //Si el dia no está programado NO se activa la calefacción
@@ -405,29 +335,8 @@ void Control_Programador(){
       Evalua_PRG2 = false;
   }
 
-  // Programador_3
-  //Si el dia no está programado NO se activa la calefacción
-  if (Prog_Dias3.indexOf(Dia_Actual)==-1){
-      Evalua_PRG3 = false;
-  }
-
-  // Verifico que el dia este programado y la hora actual este entre la hora start y stop (en segundos) para programar la Calefacción
-  //   22:00  23:45 LMXJVSD  Actual 23:30 M  Actual 6:30 X
-  if ((Prog_Dias3.indexOf(Dia_Actual)>=0)&&(Prog_Dias3!="")
-                &&(
-                  ((Hora_Actual_sec>=Hora_Start_sec3)&&(Hora_Actual_sec<Hora_Stop_sec3)&&(Hora_Stop_sec3>Hora_Start_sec3))
-                ||((Hora_Actual_sec>=Hora_Start_sec3)&&(Hora_Actual_sec>Hora_Stop_sec3)&&(Hora_Stop_sec3<Hora_Start_sec3))
-                ||((Hora_Actual_sec<=Hora_Start_sec3)&&(Hora_Actual_sec<Hora_Stop_sec3)&&(Hora_Stop_sec3<Hora_Start_sec3))
-                )
-      ){
-      Evalua_PRG3 = true;
-  }
-  else{
-      Evalua_PRG3 = false;
-  }
-
   // Acciones sobre el Control de la caldera por Programador
-  if ((Evalua_PRG1)||(Evalua_PRG2)||(Evalua_PRG3)){
+  if ((Evalua_PRG1)||(Evalua_PRG2)){
       estado_calefac = 1;
       Blynk.virtualWrite(V1, estado_calefac);
       evalua = true;
@@ -515,6 +424,7 @@ void startBlink(){
   terminal.println("   ---- TERMOSTATO BROKER INICIALIZADO ----");
   terminal.println("Firmware Versión: " + String(BLYNK_FIRMWARE_VERSION));
   terminal.println("IP address Termostato - BROKER: " + WiFi.localIP().toString());
+  terminal.println("Para obtener ayuda del dispositivo teclee en el terminal HELP");
   terminal.flush();
   mqttReconnectTimer.once(10, startBrokerMqtt); // Me conecto el Broker MQTT
 }
@@ -1145,6 +1055,10 @@ void loop(){
       terminal.println("ESTADO_RELE -> Muestra estado actual relé");
       terminal.println("PROGRAMADOR -> Muestra las horas de los Programadores Horarios");
       terminal.println("COMUNICACION_RELE -> Muestra/Oculta la comunicación periódica con el relé");
+      terminal.println("AJUSTE -> Muestra el ajuste de temperatura configurado");
+      terminal.println("AJUSTE= -> Configura ajuste de temperatura ej: AJUSTE=-2.5");
+      terminal.println("BANDA -> Muestra la banda de funcionamiento, configurado");
+      terminal.println("BANDA= -> Configura banda de funcionamiento, ej: BANDA=1");
       terminal.flush();
     }
     if (ordenes == "RESET"){              // RESET Termostato_Broker
@@ -1183,6 +1097,32 @@ void loop(){
       terminal.println("Rele Caldera Reiniciado");
       terminal.flush();
     }
+
+    if (ordenes == "BANDA"){         // Banda de Funcionamiento
+      ordenes = "";
+      terminal.println(" Banda Diferencial de Funcionamiento Caldera = " + String(Banda_Diferencial));
+      terminal.flush();
+    }
+    if (ordenes.substring(0, 6) == "BANDA="){  //  Configuración Banda de  Funcionamiento
+      Banda_Diferencial = ordenes.substring(6, ordenes.length()).toInt();
+      ordenes = "";
+      evalua = true;
+    }
+
+    if (ordenes == "AJUSTE"){         // Ajuste Temperatura
+      ordenes = "";
+      terminal.println(" Ajuste Temperatura = " + String(ajuste));
+      terminal.flush();
+    }
+    if (ordenes.substring(0, 7) == "AJUSTE="){  //  Configuración  Ajuste Temperatura
+      ajuste = ordenes.substring(7, ordenes.length()).toFloat();
+      ordenes = "";
+      terminal.println(" Ajuste Temperatura = " + String(ajuste));
+      terminal.flush();
+      dataSensor();
+      evalua = true;
+    }
+    
     if (ordenes == "ESTADO_RELE"){         // Estado Relé
       ordenes = "";
       myBroker.publish("cmnd/shelly/POWER", "");
@@ -1191,16 +1131,12 @@ void loop(){
       ordenes = "";
       terminal.println("PROGRAMADOR 1");
       terminal.println("Inicio: " + Hora_Start1 + "h - Fin: " + Hora_Stop1 + "h");
-      terminal.println("1. Lunes 2. Martes 3. Miercoles 4. Jueves 5. Viernes 6.Sabado 7.Domingo");
+      terminal.println("1. Lunes 2. Martes 3. Miercoles 4. Jueves 5. Viernes 6.Sabado 7.Domingo");   
       terminal.println("PROGRAMADOR 1 Dias Semana: " + Prog_Dias1);
       terminal.println("PROGRAMADOR 2");
       terminal.println("Inicio: " + Hora_Start2 + "h - Fin: " + Hora_Stop2 + "h");
       terminal.println("1. Lunes 2. Martes 3. Miercoles 4. Jueves 5. Viernes 6.Sabado 7.Domingo");
       terminal.println("PROGRAMADOR 2 Dias Semana: " + Prog_Dias2);
-      terminal.println("PROGRAMADOR 3");
-      terminal.println("Inicio: " + Hora_Start3 + "h - Fin: " + Hora_Stop3 + "h");
-      terminal.println("1. Lunes 2. Martes 3. Miercoles 4. Jueves 5. Viernes 6.Sabado 7.Domingo");
-      terminal.println("PROGRAMADOR 3 Dias Semana: " + Prog_Dias3);
       terminal.flush();
     }
     if (ordenes == "COMUNICACION_RELE"){   // Comunicación periódica Relé
@@ -1214,7 +1150,7 @@ void loop(){
     }
 
     // watchdog SENSOR TEMPERATURA (5 min se mantiene el error )
-    if (temp_medida < -10)
+    if(temp_medida < -10)
       watchdogSensor.attach_scheduled(600, Fallo_Sensor);
     else
       watchdogSensor.detach();
