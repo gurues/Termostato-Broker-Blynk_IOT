@@ -96,6 +96,7 @@ bool inicio = true;                       // control estado inical
 bool evalua = false;                      // true -> Cuando hay que actualizar algún valor / false -> no hay nada para actualizar
 bool ota = false;                         // actualización por OTA (OTA activa = true)
 bool latido = false;                      // Estado rele cada 5 min (true envio activo)
+bool watchdog_mqtt;                       // Perro guardiar de buen funcionamiento del Broker 
 bool fabrica = false;                     // Para resetear todas las SSID del dispositio
 bool shouldSaveConfig = false;            // Permisivo para guardar datos de configuración LittleFS
 String client_rele_init = "caldera";      // cliente a controlar (rele shelly 1)
@@ -125,6 +126,7 @@ String ReleControl = "cmnd/shelly/POWER";       // Topic que comanda el relé sh
 String EstadoReleControl = "stat/shelly/POWER"; // Topic que muestra el estado del relé
 String Dispositivo ="tele/shelly/LWT";          // Online -> Cuando está conectado al Termostato-Broker
 String EstadoDispositivo = "tele/shelly/STATE"; // Estado del relé cuando está conectado al Termostato-Broker
+String Watchdog = "MqttBroker";                 // Estado del Mqtt-Broker
 
 //---------------------------------------------------------------------------------------------------------------------------------------
 //              ********************  FUCIONES  ********************
@@ -156,7 +158,6 @@ void Ahora(){
 }
 
 // Funciones app Blink  ---------------------------------------------------------------------------------------------------------
-
 
 // temperatura app Blink
 BLYNK_WRITE(V5){ 
@@ -505,7 +506,7 @@ public:
         #endif
       }
 
-      // Sensor de temeratura Externo
+      // Sensor de temperatura Externo
       if (topic == "sensor_temp"){
         String str_temp_medida = (String)data_str;
         temp_medida = str_temp_medida.toFloat();
@@ -623,7 +624,9 @@ public:
           terminal.flush();
         }
       }
-
+      // Watchdog -> Estado del mqtt Broker
+      if (topic == Watchdog)
+        watchdog_mqtt = ((String)data_str).toInt();
     }
 
     // Sample for the usage of the client info methods
@@ -661,6 +664,8 @@ void startBrokerMqtt(){
   myBroker.subscribe(Dispositivo);
   // Estado del Dispositivo de control del termostato
   myBroker.subscribe(EstadoDispositivo);
+  // Estado del MQTT Broker
+  myBroker.subscribe(Watchdog);
   // Arranque / Para Calefacción: 1 -> Calefacción AUTO / 0 -> calefacción APAGADA
   myBroker.subscribe("calefaccion");   
   // topic donde mandaría los valores de temperatura un sensor externo al SHT30 usado en este dispositivo   
@@ -672,6 +677,7 @@ void startBrokerMqtt(){
   // Banda Diferencial -> es el margen para que pare la calefacción despues de pasar el setpoint (defecto = 1ºC) / ejemplo -> B+2 ó B-3
   // Setpoint -> es el valor de temperatura de paro de la calefacción (defecto = 21ºC) / ejemplo -> S22 ó S18
   myBroker.subscribe("config");   
+  watchdog_mqtt = false; // Activo el perro guardian del MQTT 
 
 }
 
@@ -725,11 +731,29 @@ void Fallo_Sensor(){
 }
 
 // Verifico que unos de los clientes conectados al Broker MQTT sea el relé caldera
-void verifico_rele_mqtt (){
+// y que el Broker este funcionando
+void verifico_mqtt (){
+  #ifdef ___DEBUG___
+    Serial.println("----------------------------  Watchdog BROKER MQTT -----");
+  #endif
 
+  myBroker.publish(Watchdog, "1"); // mqtt OK
+
+  //Verifico relé shelly conectado al Broker mqtt
   if (client_rele != client_rele_init)
     ESP.restart();
 
+  //Verifico funcionamiento correcto del Broker mqtt
+  if (watchdog_mqtt){
+    watchdog_mqtt = false;
+    if (Min_Actual<10)
+      terminal.println(String(Hora_Actual) + ":0" + String(Min_Actual) + "h " + "watchdog Termostato-Broker -->> OK");
+    else
+      terminal.println(String(Hora_Actual) + ":" + String(Min_Actual) + "h " + "watchdog Termostato-Broker -->> OK");
+    terminal.flush();
+  }
+  else
+    ESP.restart();
 }
 
 // Funciones WiFi  -------------------------------------------------------------------------------------------------
@@ -1003,8 +1027,8 @@ void setup()
   // Cada 10 segundos actualizo la hora actual
   ticker_Ahora.attach_scheduled(10, Ahora);
   // Cada 5 minutos verifico que el relé caldera esta conectado al Broker MQTT 
-  // si no esta conectado reinicio TermostatoBroker
-  watchdogBroker.attach_scheduled(600, verifico_rele_mqtt);
+  // y que el Broker funcione, si no se cumple reinicio TermostatoBroker
+  watchdogBroker.attach_scheduled(300, verifico_mqtt);
 
   #ifdef ___DEBUG___
     Serial.println("INICIALIZADO Termostato-Broker");
@@ -1053,6 +1077,7 @@ void loop(){
       terminal.println("UPDATE_OTA -> Permisivo para la actualización OTA-LOCAL");
       terminal.println("RESET_RELE -> Reinicio relé Shelly 1");
       terminal.println("ESTADO_RELE -> Muestra estado actual relé");
+      terminal.println("ESTADO_MQTT -> Muestra estado actual del Broker Mqtt");
       terminal.println("PROGRAMADOR -> Muestra las horas de los Programadores Horarios");
       terminal.println("COMUNICACION_RELE -> Muestra/Oculta la comunicación periódica con el relé");
       terminal.println("AJUSTE -> Muestra el ajuste de temperatura configurado");
@@ -1127,7 +1152,13 @@ void loop(){
       ordenes = "";
       myBroker.publish("cmnd/shelly/POWER", "");
     }
-    if (ordenes == "PROGRAMADOR"){         // Estado Relé
+
+    if (ordenes == "ESTADO_MQTT"){         // Estado MQTT
+      ordenes = "";
+      verifico_mqtt ();
+    }
+
+    if (ordenes == "PROGRAMADOR"){         // Estado PROGRAMADORES
       ordenes = "";
       terminal.println("PROGRAMADOR 1");
       terminal.println("Inicio: " + Hora_Start1 + "h - Fin: " + Hora_Stop1 + "h");
