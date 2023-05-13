@@ -231,10 +231,14 @@ BLYNK_WRITE(V3) {
 
   if (Min_Start<10){
     Hora_Start1 =  String(Hora_Start) + ":0" + String(Min_Start);
-    Hora_Stop1 = String(Hora_Stop) + ":0" + String(Min_Stop);
   }
   else{
     Hora_Start1 =  String(Hora_Start) + ":" + String(Min_Start);
+  }
+  if (Min_Stop<10){
+    Hora_Stop1 = String(Hora_Stop) + ":0" + String(Min_Stop);
+  }
+  else{
     Hora_Stop1 = String(Hora_Stop) + ":" + String(Min_Stop);
   }
 
@@ -275,11 +279,15 @@ BLYNK_WRITE(V7) {
 
   if (Min_Start<10){
     Hora_Start2 =  String(Hora_Start) + ":0" + String(Min_Start);
+  }
+  else{
+    Hora_Start2 =  String(Hora_Start) + ":" + String(Min_Start);
+  }
+  if (Min_Stop<10){
     Hora_Stop2 = String(Hora_Stop) + ":0" + String(Min_Stop);
   }
   else{
-    Hora_Start2 =  String(Hora_Start);
-    Hora_Stop2 = String(Hora_Stop);
+    Hora_Stop2 = String(Hora_Stop) + ":" + String(Min_Stop);
   }
 
 }
